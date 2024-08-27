@@ -1,0 +1,23 @@
+---
+- name: MongoDB Cluster on Docker
+  hosts: all
+  become: true
+  become_method: sudo
+  vars_files:
+    - all.yaml
+  tasks:
+    - name: Update and upgrade apt packages
+      ansible.builtin.apt:
+        upgrade: 'yes'
+        state: present
+        update_cache: true
+        cache_valid_time: 86400
+
+    - name: Install and configure Docker
+      ansible.builtin.import_tasks:
+        file: tasks/docker.yaml
+
+    - name: Install and configure MongoDB
+      ansible.builtin.import_tasks:
+        file: tasks/mongo.yaml
+...

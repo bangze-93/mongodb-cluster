@@ -1,0 +1,9 @@
+{
+  "default-ulimits": {
+    "nofile": {
+      "Name": "nofile",
+      "Hard": 1048576,
+      "Soft": 64000
+    }
+  }
+}

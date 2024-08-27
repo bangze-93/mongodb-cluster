@@ -1,0 +1,20 @@
+services:
+  mongo:
+    image: mongo:{{ mongo_version }}
+    container_name: mongodb
+    hostname: mongodb
+    restart: always
+    ports:
+      - '0.0.0.0:27017:27017'
+    volumes:
+      - {{ mongo_vol_dir }}/data:/data/db
+      - {{ mongo_vol_dir }}/config:/data/configdb
+      - {{ mongo_vol_dir }}/log:/var/log/mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: {{ mongo_initdb_root_username }}
+      MONGO_INITDB_ROOT_PASSWORD: {{ mongo_initdb_root_password }}
+      TZ: {{ timezone }}
+    command: mongod --config /data/configdb/mongod.conf
+networks:
+  default:
+    name: mongodb

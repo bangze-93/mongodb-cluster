@@ -1,0 +1,8 @@
+---
+mongo_cluster_name: MongoDB-Cluster
+mongo_version: 7.0.12
+mongo_initdb_root_username: admin
+mongo_initdb_root_password: YtZkg4308OsR2yXM
+mongo_vol_dir: /opt/mongodb
+timezone: Asia/Jakarta
+...

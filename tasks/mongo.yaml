@@ -1,0 +1,104 @@
+---
+- name: Configure ulimit setting for MongoDB
+  ansible.builtin.copy:
+    src: 99-mongodb.conf
+    dest: /etc/sysctl.d/
+    mode: 0644
+  register: sysctl
+
+- name: Reload sysctl to read config ulimit for MongoDB
+  ansible.builtin.command: 
+    cmd: sysctl --system
+  when: sysctl.changed
+
+- name: Create volume directory for MongoDB
+  ansible.builtin.file:
+    path: "{{ mongo_vol_dir }}/{{ item }}"
+    state: directory
+    mode: 0755
+  loop:
+    - data
+    - config
+    - log
+
+- name: Configure mongod.conf file
+  ansible.builtin.template:
+    src: mongod.conf.j2
+    dest: "{{ mongo_vol_dir }}/config/mongod.conf"
+    mode: 0644
+    backup: true
+
+- name: Create mongod.log file
+  ansible.builtin.file:
+    path: "{{ mongo_vol_dir }}/log/mongod.log"
+    state: touch
+
+- name: Generate cluster keyFile
+  block:
+
+    - name: Generate cluster.key
+      ansible.builtin.shell:
+        cmd: openssl rand -base64 756 > {{ mongo_vol_dir }}/config/cluster.key
+
+    - name: Get cluster.key
+      ansible.builtin.fetch:
+        src: "{{ mongo_vol_dir }}/config/cluster.key"
+        dest: "{{ playbook_dir }}/files/"
+        flat: true
+
+  throttle: 1
+  when: inventory_hostname == 'mongo01'
+
+
+- name: Copy cluster.key to another MongoDB nodes
+  ansible.builtin.copy:
+    src: cluster.key
+    dest: "{{ mongo_vol_dir }}/config/cluster.key"
+  when:  inventory_hostname != 'mongo01'    
+
+- name: Change cluster.key permissions
+  ansible.builtin.file:
+    path: "{{ mongo_vol_dir }}/config/cluster.key"
+    mode: 0400
+
+- name: Change ownership {{ mongo_vol_dir }} folder
+  ansible.builtin.file:
+    path: "{{ mongo_vol_dir }}"
+    owner: 999
+    group: 999
+    recurse: yes
+
+- name: Configure MongoDB compose file
+  ansible.builtin.template:
+    src: mongo-compose.yaml.j2
+    dest: "{{ mongo_vol_dir }}/mongo.yaml"
+    mode: 0644
+
+- name: Create MongoDB container
+  community.docker.docker_compose_v2:
+    project_src: "{{ mongo_vol_dir }}"
+    files: mongo.yaml
+    project_name: mongo
+    state: present
+
+- name: Pause for 3 minutes to prepare MongoDB cluster
+  ansible.builtin.pause:
+    minutes: 3
+
+- name: Initiate MongoDB cluster
+  community.docker.docker_container_exec:
+    container: mongodb
+    command: >
+      mongosh -u {{ mongo_initdb_root_username }} -p {{ mongo_initdb_root_password }} --authenticationDatabase admin --eval "
+      rs.initiate({
+        _id: '{{ mongo_cluster_name }}',
+        members: [
+          { _id: 0, host: '{{ hostvars['mongo01']['ansible_host'] }}:27017' },
+          { _id: 1, host: '{{ hostvars['mongo02']['ansible_host'] }}:27017' },
+          { _id: 2, host: '{{ hostvars['mongo03']['ansible_host'] }}:27017' }
+        ]
+      })"
+  when: inventory_hostname == 'mongo01'
+  ignore_errors: true
+  tags: init
+...
