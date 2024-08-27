@@ -32,6 +32,9 @@ ansible-playbook playbook.yaml
 ```
 mongodb://admin:YtZkg4308OsR2yXM@192.168.60.141:27017,192.168.60.142:27017,192.168.60.143:27017/?replicaSet=MongoDB-Cluster&authMechanism=DEFAULT&authSource=admin
 ```
+![Screenshot from 2024-08-27 15-28-40](https://github.com/user-attachments/assets/2dcfb26d-39c8-460d-bb70-0ffd9cae0e1f)
+![Screenshot from 2024-08-27 15-29-41](https://github.com/user-attachments/assets/fe9e38bc-174a-4e90-871f-26e7897d5515)
+
 
 
 
